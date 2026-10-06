@@ -1,14 +1,14 @@
 {
   "name": "simulation-modeling",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Имитационное моделирование",
   "main": "index.js",
   "repository": "git@gitverse.ru:noisycake/2026-1--study--simulation-modeling.git",
   "author": "Berezhnoy Ivan <1132236041@rudn.ru>",
   "license": "CC-BY-4.0",
-    "config": {
-	"commitizen": {
-	    "path": "cz-customizable"
-	}
+  "config": {
+    "commitizen": {
+      "path": "cz-customizable"
     }
+  }
 }
