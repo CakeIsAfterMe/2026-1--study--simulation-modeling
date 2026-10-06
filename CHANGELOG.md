@@ -1,3 +1,9 @@
+# [1.1.0](https://gitverse.ru/noisycake/2026-1--study--simulation-modeling/compare/v1.0.0...v1.1.0) (2026-10-06)
+
+### Features
+
+* **lab01:** add report, presentation and project ([69bf360](https://gitverse.ru/noisycake/2026-1--study--simulation-modeling/commits/69bf360a6c5f1363becf6a90e81b1f7f51890df7))
+
 # 1.0.0 (2026-10-06)
 
 ### Features
