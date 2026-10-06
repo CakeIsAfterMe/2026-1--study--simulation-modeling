@@ -1,0 +1,300 @@
+# # Модель Лотки-Вольтерры
+#
+# Модель «хищник-жертва». Система уравнений:
+#
+# $$
+# \frac{dx}{dt} = \alpha x - \beta x y, \quad
+# \frac{dy}{dt} = \delta x y - \gamma y.
+# $$
+#
+# Обозначения:
+#
+# - $x$ --- популяция жертв, $y$ --- популяция хищников;
+# - $\alpha$ --- естественный прирост жертв;
+# - $\beta$ --- коэффициент поедания жертв хищниками;
+# - $\delta$ --- прирост хищников за счёт поедания жертв;
+# - $\gamma$ --- естественная смертность хищников.
+
+# ## Активация проекта и загрузка пакетов
+
+using DrWatson
+@quickactivate "project"
+
+using DifferentialEquations
+using DataFrames
+using StatsPlots
+using LaTeXStrings
+using Plots
+using Statistics
+using FFTW
+
+script_name = "lv_ode"
+mkpath(plotsdir(script_name))
+mkpath(datadir(script_name))
+
+# ## Определение модели
+
+function lotka_volterra!(du, u, p, t)
+    x, y = u
+    α, β, δ, γ = p
+    @inbounds begin
+        du[1] = α*x - β*x*y
+        du[2] = δ*x*y - γ*y
+    end
+    nothing
+end
+
+# ## Параметры модели и начальные условия
+#
+# Параметры: $\alpha = 0.1$, $\beta = 0.02$, $\delta = 0.01$, $\gamma = 0.3$.
+# В начале 40 жертв и 9 хищников.
+
+p_lv = [0.1,    # α: скорость размножения жертв
+        0.02,   # β: скорость поедания жертв хищниками
+        0.01,   # δ: коэффициент конверсии жертв в хищников
+        0.3]    # γ: смертность хищников
+
+u0_lv = [40.0, 9.0]
+
+tspan_lv = (0.0, 200.0)
+dt_lv = 0.01
+save_dt = 0.1
+
+# ## Решение задачи
+#
+# Используем метод Tsit5 с жёсткими допусками. Результат сохраняем
+# с шагом `save_dt`.
+
+prob_lv = ODEProblem(lotka_volterra!, u0_lv, tspan_lv, p_lv)
+sol_lv = solve(prob_lv, Tsit5(),
+    dt = dt_lv,
+    reltol = 1e-8,
+    abstol = 1e-10,
+    saveat = save_dt)
+
+# Переносим решение в таблицу:
+
+df_lv = DataFrame()
+df_lv[!, :t] = sol_lv.t
+df_lv[!, :prey] = [u[1] for u in sol_lv.u]
+df_lv[!, :predator] = [u[2] for u in sol_lv.u]
+
+# Считаем производные (скорости изменения популяций):
+
+df_lv[!, :dprey_dt] = p_lv[1] .* df_lv.prey .- p_lv[2] .* df_lv.prey .* df_lv.predator
+df_lv[!, :dpredator_dt] = p_lv[3] .* df_lv.prey .* df_lv.predator .- p_lv[4] .* df_lv.predator
+first(df_lv, 5)
+
+# Вывод информации о модели:
+
+println("="^60)
+println("Модель Лотки-Вольтерры (хищник-жертва)")
+println("="^60)
+println("Параметры модели:")
+println("α (скорость размножения жертв) = ", p_lv[1])
+println("β (скорость поедания жертв) = ", p_lv[2])
+println("δ (коэффициент конверсии) = ", p_lv[3])
+println("γ (смертность хищников) = ", p_lv[4])
+println("Начальные условия:")
+println("Жертвы (x0) = ", u0_lv[1])
+println("Хищники (y0) = ", u0_lv[2])
+
+# ## Стационарная точка
+#
+# Точка равновесия: $x^* = \gamma / \delta$, $y^* = \alpha / \beta$.
+
+x_star = p_lv[4] / p_lv[3]
+y_star = p_lv[1] / p_lv[2]
+println("Стационарные точки (положения равновесия):")
+println("x* = γ/δ = ", round(x_star, digits=3))
+println("y* = α/β = ", round(y_star, digits=3))
+
+# ## Динамика популяций во времени
+
+plt1 = plot(df_lv.t, [df_lv.prey df_lv.predator],
+    label=["Жертвы (x)" "Хищники (y)"],
+    xlabel="Время",
+    ylabel="Популяция",
+    title="Модель Лотки-Вольтерры: Динамика популяций",
+    linewidth=2,
+    legend=:topright,
+    grid=true,
+    size=(900, 500),
+    color=[:green :red])
+
+hline!(plt1, [x_star], color=:green, linestyle=:dash, alpha=0.5, label="x* (равновесие жертв)")
+hline!(plt1, [y_star], color=:red, linestyle=:dash, alpha=0.5, label="y* (равновесие хищников)")
+plt1
+
+# ## Фазовый портрет
+#
+# Траектория замкнута вокруг стационарной точки. Пунктиром показаны
+# изоклины: горизонтальная $y = \alpha/\beta$ (жертвы не меняются) и
+# вертикальная $x = \gamma/\delta$ (хищники не меняются).
+
+plt2 = plot(df_lv.prey, df_lv.predator,
+    label="Фазовая траектория",
+    xlabel="Популяция жертв (x)",
+    ylabel="Популяция хищников (y)",
+    title="Фазовый портрет системы",
+    color=:blue,
+    linewidth=1.5,
+    grid=true,
+    size=(800, 600),
+    legend=:topright)
+
+arrow_step = 50
+for i in 1:arrow_step:length(df_lv.prey)-arrow_step
+    plot!(plt2, [df_lv.prey[i], df_lv.prey[i+1]],
+        [df_lv.predator[i], df_lv.predator[i+1]],
+        arrow=:closed, color=:blue, alpha=0.3, label=false)
+end
+
+scatter!(plt2, [x_star], [y_star],
+    color=:black, markersize=8, label="Стационарная точка (x*, y*)")
+
+hline!(plt2, [y_star], color=:green, linestyle=:dash, linewidth=1.5,
+    label="Изоклина жертв (dx/dt = 0)")
+vline!(plt2, [x_star], color=:red, linestyle=:dash, linewidth=1.5,
+    label="Изоклина хищников (dy/dt = 0)")
+plt2
+
+# ## Скорости изменения популяций
+
+plt3 = plot(df_lv.t, [df_lv.dprey_dt df_lv.dpredator_dt],
+    label=[L"dx/dt" L"dy/dt"],
+    xlabel="Время",
+    ylabel="Скорость изменения",
+    title="Производные популяций",
+    linewidth=1.5,
+    legend=:topright,
+    grid=true,
+    size=(900, 400),
+    color=[:green :red])
+
+hline!(plt3, [0], color=:black, linestyle=:solid, alpha=0.3, label=false)
+plt3
+
+# ## Относительные темпы роста
+
+df_lv[!, :prey_pct_change] = df_lv.dprey_dt ./ df_lv.prey .* 100
+df_lv[!, :predator_pct_change] = df_lv.dpredator_dt ./ df_lv.predator .* 100
+
+plt4 = plot(df_lv.t, [df_lv.prey_pct_change df_lv.predator_pct_change],
+    label=["(dx/dt)/x, %" "(dy/dt)/y, %"],
+    xlabel="Время",
+    ylabel="Относительное изменение, %",
+    title="Относительные темпы роста",
+    linewidth=1.5,
+    legend=:topright,
+    grid=true,
+    size=(900, 400),
+    color=[:green :red])
+
+# ## Спектральный анализ
+#
+# Быстрое преобразование Фурье показывает основную частоту колебаний.
+# Шаг сигнала равен шагу сохранения `save_dt`.
+
+function compute_fft(signal, dt)
+    n = length(signal)
+    spectrum = abs.(rfft(signal))
+    freq = rfftfreq(n, 1/dt)
+    return freq, spectrum
+end
+
+freq_prey, spectrum_prey = compute_fft(df_lv.prey .- mean(df_lv.prey), save_dt)
+freq_predator, spectrum_predator = compute_fft(df_lv.predator .- mean(df_lv.predator), save_dt)
+
+# Нулевую частоту на график не выводим: на логарифмической шкале её нет.
+
+plt5 = plot(freq_prey[2:end], [spectrum_prey[2:end] spectrum_predator[2:end]],
+    label=["Жертвы (x)" "Хищники (y)"],
+    xlabel="Частота",
+    ylabel="Амплитуда",
+    title="Спектральный анализ (Фурье)",
+    linewidth=1.5,
+    xscale=:log10,
+    yscale=:log10,
+    legend=:topright,
+    grid=true,
+    size=(800, 400),
+    color=[:green :red])
+
+# Доминирующая частота и период колебаний:
+
+idx_prey = argmax(spectrum_prey[2:end]) + 1
+dominant_freq_prey = freq_prey[idx_prey]
+period_prey = 1 / dominant_freq_prey
+println("Доминирующая частота колебаний жертв: ", round(dominant_freq_prey, digits=4))
+println("Период колебаний жертв (Фурье): ", round(period_prey, digits=2), " единиц времени")
+println("Период малых колебаний (теория): ", round(2π / sqrt(p_lv[1] * p_lv[4]), digits=2))
+
+# ## Сводная панель
+
+plt6 = plot(layout=(3, 2), size=(1200, 900))
+
+plot!(plt6[1], df_lv.t, df_lv.prey, label=L"x(t)", color=:green, linewidth=2,
+    title="Популяция жертв", grid=true)
+plot!(plt6[2], df_lv.t, df_lv.predator, label=L"y(t)", color=:red, linewidth=2,
+    title="Популяция хищников", grid=true)
+plot!(plt6[3], df_lv.prey, df_lv.predator, label=false, color=:blue, linewidth=1.5,
+    title="Фазовый портрет", xlabel=L"x", ylabel=L"y", grid=true)
+scatter!(plt6[3], [x_star], [y_star], color=:black, markersize=5, label="(x*, y*)")
+plot!(plt6[4], df_lv.t, [df_lv.dprey_dt df_lv.dpredator_dt],
+    label=[L"dx/dt" L"dy/dt"], color=[:green :red], linewidth=1.5,
+    title="Скорости изменения", grid=true, legend=:topright)
+plot!(plt6[5], freq_prey[2:end], spectrum_prey[2:end], label=L"x", color=:green, linewidth=1.5,
+    title="Спектр жертв", xscale=:log10, yscale=:log10, grid=true)
+plot!(plt6[6], df_lv.t, [df_lv.prey_pct_change df_lv.predator_pct_change],
+    label=["dx/x" "dy/y"], color=[:green :red], linewidth=1.5,
+    title="Относительные изменения", grid=true, legend=:topright)
+plt6
+
+# ## Анализ результатов
+
+println("="^60)
+println("Анализ результатов")
+println("="^60)
+println("Основные статистики:")
+println("Жертвы: min = ", round(minimum(df_lv.prey), digits=2),
+    ", max = ", round(maximum(df_lv.prey), digits=2),
+    ", mean = ", round(mean(df_lv.prey), digits=2))
+println("Хищники: min = ", round(minimum(df_lv.predator), digits=2),
+    ", max = ", round(maximum(df_lv.predator), digits=2),
+    ", mean = ", round(mean(df_lv.predator), digits=2))
+
+# ## Сдвиг фаз
+#
+# Находим моменты всех пиков. Пик хищников наступает позже пика жертв.
+
+function find_peaks(signal, time)
+    peaks = Float64[]
+    for i in 2:length(signal)-1
+        if signal[i] > signal[i-1] && signal[i] > signal[i+1]
+            push!(peaks, time[i])
+        end
+    end
+    return peaks
+end
+
+peaks_prey = find_peaks(df_lv.prey, df_lv.t)
+peaks_predator = find_peaks(df_lv.predator, df_lv.t)
+later_peaks = filter(t -> t > peaks_prey[1], peaks_predator)
+
+println("Анализ колебаний:")
+println("Первый пик жертв: время = ", round(peaks_prey[1], digits=2))
+println("Следующий пик хищников: время = ", round(later_peaks[1], digits=2))
+println("Сдвиг фаз (хищники отстают): ", round(later_peaks[1] - peaks_prey[1], digits=2))
+println("Период по пикам жертв: ", round(mean(diff(peaks_prey)), digits=2))
+
+# ## Сохранение графиков
+
+savefig(plt1, plotsdir(script_name, "lv_dynamics.png"))
+savefig(plt2, plotsdir(script_name, "lv_phase_portrait.png"))
+savefig(plt3, plotsdir(script_name, "lv_derivatives.png"))
+savefig(plt4, plotsdir(script_name, "lv_relative_changes.png"))
+savefig(plt5, plotsdir(script_name, "lv_spectrum.png"))
+savefig(plt6, plotsdir(script_name, "lv_panel.png"))
+
+println("Моделирование завершено успешно!")
