@@ -1,0 +1,48 @@
+# # Обедающие философы: анимация процесса
+#
+# Анимация показывает, как меняется маркировка сети во времени. Каждый
+# кадр --- столбчатая диаграмма числа фишек в каждой позиции.
+# Для наглядности берём трёх философов.
+
+# ## Активация проекта и загрузка пакетов
+
+using DrWatson
+@quickactivate "project"
+@isdefined(DiningPhilosophers) || include(srcdir("DiningPhilosophers.jl"))
+using .DiningPhilosophers
+using Plots, Random
+
+# ## Моделирование
+#
+# Классическая сеть, три философа, время 30 единиц.
+
+N = 3
+tmax = 30.0
+net, u0, place_names = build_classical_network(N)
+
+Random.seed!(123)
+df = simulate_stochastic(net, u0, tmax)
+println("Число кадров: ", size(df, 1))
+println("Deadlock обнаружен: ", detect_deadlock(df, net))
+
+# ## Создание анимации
+#
+# Для каждой строки таблицы строим один кадр и сохраняем результат
+# в файл GIF.
+
+anim = @animate for row in eachrow(df)
+    u = [row[col] for col in propertynames(row) if col != :time]
+    bar(
+        1:length(u),
+        u,
+        legend = false,
+        ylims = (0, maximum(u0) + 1),
+        xlabel = "Позиция",
+        ylabel = "Фишки",
+        title = "Время = $(round(row.time, digits=2))",
+    )
+    xticks!(1:length(u), string.(place_names), rotation = 45)
+end
+
+gif(anim, plotsdir("philosophers_simulation.gif"), fps = 2)
+println("Анимация сохранена в plots/philosophers_simulation.gif")

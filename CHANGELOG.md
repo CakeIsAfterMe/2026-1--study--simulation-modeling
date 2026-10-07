@@ -1,3 +1,10 @@
+# [1.5.0](https://gitverse.ru/noisycake/2026-1--study--simulation-modeling/compare/v1.4.0...v1.5.0) (2026-10-07)
+
+### Features
+
+* **lab05:** add Petri net dining philosophers project ([c95d03e](https://gitverse.ru/noisycake/2026-1--study--simulation-modeling/commits/c95d03e52b5c9df172142796700f79464a1a0d0e))
+* **lab05:** add report and presentation ([a48a35d](https://gitverse.ru/noisycake/2026-1--study--simulation-modeling/commits/a48a35d4ffbaa58bd7698f19f4e64f091b521b53))
+
 # [1.4.0](https://gitverse.ru/noisycake/2026-1--study--simulation-modeling/compare/v1.3.0...v1.4.0) (2026-10-07)
 
 ### Features
