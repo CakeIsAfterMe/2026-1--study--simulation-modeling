@@ -1,6 +1,6 @@
 using DrWatson
 @quickactivate "project"
-include(srcdir("DiningPhilosophers.jl"))
+@isdefined(DiningPhilosophers) || include(srcdir("DiningPhilosophers.jl"))
 using .DiningPhilosophers
 using Plots, Random
 
