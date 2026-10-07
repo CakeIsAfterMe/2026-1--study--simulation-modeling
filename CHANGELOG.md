@@ -1,3 +1,10 @@
+# [1.4.0](https://gitverse.ru/noisycake/2026-1--study--simulation-modeling/compare/v1.3.0...v1.4.0) (2026-10-07)
+
+### Features
+
+* **lab04:** add agent-based SIR project ([dbf71bb](https://gitverse.ru/noisycake/2026-1--study--simulation-modeling/commits/dbf71bbb902faa8f6ec069c8cf5f21f91d8cc09a))
+* **lab04:** add report and presentation ([9f07e87](https://gitverse.ru/noisycake/2026-1--study--simulation-modeling/commits/9f07e8760f62c1a95a04b0e46b2a7ee4351939c2))
+
 # [1.3.0](https://gitverse.ru/noisycake/2026-1--study--simulation-modeling/compare/v1.2.0...v1.3.0) (2026-10-07)
 
 ### Features

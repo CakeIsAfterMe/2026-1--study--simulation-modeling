@@ -1,0 +1,127 @@
+# Агентная модель SIR: базовый эксперимент
+
+Агентная версия модели эпидемии. Каждый агент --- человек в одном из
+трёх состояний: восприимчивый (`:S`), инфицированный (`:I`) или
+выздоровевший (`:R`). Агенты живут в трёх городах и перемещаются
+между ними.
+
+Скрипт запускает один эксперимент с параметрами по умолчанию и строит
+график динамики.
+
+## Активация проекта и загрузка пакетов
+
+```{julia}
+using DrWatson
+@quickactivate "project"
+
+using Agents, DataFrames, Plots
+using JLD2
+```
+
+Код модели находится в файле `src/sir_model.jl`:
+
+```{julia}
+include(srcdir("sir_model.jl"))
+```
+
+## Параметры эксперимента
+
+Три города по 1000 человек. Невыявленный больной заражает в среднем
+0.5 человека в день, выявленный --- 0.05. Болезнь длится 14 дней,
+выявляют её на 7 день. В начале один больной в третьем городе.
+
+```{julia}
+params = Dict(
+    :Ns => [1000, 1000, 1000],
+    :β_und => [0.5, 0.5, 0.5],
+    :β_det => [0.05, 0.05, 0.05],
+    :infection_period => 14,
+    :detection_time => 7,
+    :death_rate => 0.02,
+    :reinfection_probability => 0.1,
+    :Is => [0, 0, 1],
+    :seed => 42,
+    :n_steps => 100,
+)
+```
+
+Базовое репродуктивное число по формуле $R_0 = \beta / \gamma$, где
+$\gamma = 1 / T$, а $T$ --- длительность болезни:
+
+```{julia}
+γ = 1 / params[:infection_period]
+R0 = params[:β_und][1] / γ
+println("R0 = β/γ = ", R0)
+```
+
+## Инициализация модели
+
+```{julia}
+model = initialize_sir(; params...)
+```
+
+## Запуск симуляции
+
+Выполняем 100 шагов (дней). После каждого шага считаем число агентов
+в каждом состоянии и общее число живых.
+
+```{julia}
+times = Int[]
+S_vals = Int[]
+I_vals = Int[]
+R_vals = Int[]
+total_vals = Int[]
+
+for step = 1:params[:n_steps]
+    Agents.step!(model, 1)
+
+    push!(times, step)
+    push!(S_vals, susceptible_count(model))
+    push!(I_vals, infected_count(model))
+    push!(R_vals, recovered_count(model))
+    push!(total_vals, total_count(model))
+end
+```
+
+Собираем данные в таблицы:
+
+```{julia}
+agent_df = DataFrame(time = times, susceptible = S_vals, infected = I_vals, recovered = R_vals)
+model_df = DataFrame(time = times, total = total_vals)
+first(agent_df, 5)
+```
+
+## Основные показатели
+
+```{julia}
+peak_idx = argmax(I_vals)
+println("Пик инфицированных: ", I_vals[peak_idx], " на ", times[peak_idx], " день")
+println("В конце: S = ", S_vals[end], ", I = ", I_vals[end], ", R = ", R_vals[end])
+println("Умерло: ", sum(params[:Ns]) - total_vals[end])
+```
+
+## Визуализация
+
+```{julia}
+plt = plot(
+    agent_df.time,
+    agent_df.susceptible,
+    label = "Восприимчивые",
+    xlabel = "Дни",
+    ylabel = "Количество",
+    linewidth = 2,
+)
+plot!(plt, agent_df.time, agent_df.infected, label = "Инфицированные", linewidth = 2)
+plot!(plt, agent_df.time, agent_df.recovered, label = "Выздоровевшие", linewidth = 2)
+plot!(plt, agent_df.time, model_df.total, label = "Всего живых", linestyle = :dash)
+plt
+```
+
+## Сохранение результатов
+
+```{julia}
+savefig(plt, plotsdir("sir_basic_dynamics.png"))
+@save datadir("sir_basic_agent.jld2") agent_df
+@save datadir("sir_basic_model.jld2") model_df
+```
+
