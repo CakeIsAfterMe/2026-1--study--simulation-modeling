@@ -1,0 +1,38 @@
+using DrWatson
+@quickactivate "project"
+using DataFrames, CSV, Plots
+
+script_name = "sirpetri_report"
+mkpath(plotsdir())
+
+df_det = CSV.read(datadir("sir_det.csv"), DataFrame)
+df_stoch = CSV.read(datadir("sir_stoch.csv"), DataFrame)
+df_scan = CSV.read(datadir("sir_scan.csv"), DataFrame)
+(nrow(df_det), nrow(df_stoch), nrow(df_scan))
+
+p1 = plot(
+    df_det.time,
+    df_det.I,
+    label = "Deterministic I",
+    xlabel = "Time",
+    ylabel = "Infected",
+    title = "Comparison",
+    linewidth = 2,
+)
+plot!(p1, df_stoch.time, df_stoch.I, label = "Stochastic I")
+savefig(p1, plotsdir("comparison.png"))
+p1
+
+p2 = plot(
+    df_scan.β,
+    df_scan.peak_I,
+    marker = :circle,
+    label = "Peak I",
+    xlabel = "β",
+    ylabel = "Peak I",
+    title = "Sensitivity",
+)
+savefig(p2, plotsdir("sensitivity.png"))
+p2
+
+println("Отчётные графики сохранены в plots/")
