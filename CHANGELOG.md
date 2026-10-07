@@ -1,3 +1,10 @@
+# [1.6.0](https://gitverse.ru/noisycake/2026-1--study--simulation-modeling/compare/v1.5.0...v1.6.0) (2026-10-07)
+
+### Features
+
+* **lab06:** add report and presentation ([8347689](https://gitverse.ru/noisycake/2026-1--study--simulation-modeling/commits/8347689dc14fc0f78ed2ba1a6f531c4fa7199f64))
+* **lab06:** add sir petri net model ([cb3f70c](https://gitverse.ru/noisycake/2026-1--study--simulation-modeling/commits/cb3f70ca0456e45f13c7bf941a2a853423cf255f))
+
 # [1.5.0](https://gitverse.ru/noisycake/2026-1--study--simulation-modeling/compare/v1.4.0...v1.5.0) (2026-10-07)
 
 ### Features
