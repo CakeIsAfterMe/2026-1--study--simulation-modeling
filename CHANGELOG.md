@@ -1,3 +1,11 @@
+# [1.3.0](https://gitverse.ru/noisycake/2026-1--study--simulation-modeling/compare/v1.2.0...v1.3.0) (2026-10-07)
+
+### Features
+
+* **lab03:** add Daisyworld project ([b9e1471](https://gitverse.ru/noisycake/2026-1--study--simulation-modeling/commits/b9e1471c7907aec985afb4ecc9b694afd5749485))
+* **lab03:** add report and presentation ([e2dda3d](https://gitverse.ru/noisycake/2026-1--study--simulation-modeling/commits/e2dda3d4a73ffc5070664b48e38815b9597e7f41))
+* **lab03:** add result files ([dbc0d41](https://gitverse.ru/noisycake/2026-1--study--simulation-modeling/commits/dbc0d416609a1191e53d787fee71879290b5ab8c))
+
 # [1.2.0](https://gitverse.ru/noisycake/2026-1--study--simulation-modeling/compare/v1.1.0...v1.2.0) (2026-10-06)
 
 ### Features
