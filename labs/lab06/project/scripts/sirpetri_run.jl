@@ -1,0 +1,79 @@
+# # Модель SIR в виде сети Петри: базовый прогон
+#
+# Модель эпидемии SIR описывается сетью Петри с тремя позициями
+# ($S$ --- восприимчивые, $I$ --- инфицированные, $R$ --- выздоровевшие)
+# и двумя переходами: заражение $S + I \to 2I$ со скоростью $\beta$
+# и выздоровление $I \to R$ со скоростью $\gamma$.
+# В этом скрипте выполняется один прогон модели двумя способами:
+# детерминированным и стохастическим.
+
+# ## Активация проекта и загрузка пакетов
+#
+# Модуль `SIRPetri` с кодом модели лежит в каталоге `src`.
+# Проверка `@isdefined` нужна, чтобы модуль не загружался повторно,
+# когда несколько скриптов выполняются в одном сеансе.
+
+using DrWatson
+@quickactivate "project"
+using Random
+@isdefined(SIRPetri) || include(srcdir("SIRPetri.jl"))
+using .SIRPetri
+using DataFrames, CSV, Plots
+
+script_name = "sirpetri_run"
+mkpath(plotsdir())
+mkpath(datadir())
+
+# ## Параметры модели
+
+β = 0.3
+γ = 0.1
+tmax = 100.0
+
+# ## Построение сети
+#
+# Функция возвращает саму сеть, начальную маркировку
+# ($S = 990$, $I = 10$, $R = 0$) и имена позиций.
+
+net, u0, states = build_sir_network(β, γ)
+u0
+
+# ## Детерминированная симуляция
+#
+# По сети строится система дифференциальных уравнений,
+# которая решается методом Tsit5.
+
+df_det = simulate_deterministic(net, u0, (0.0, tmax), saveat = 0.5, rates = [β, γ])
+CSV.write(datadir("sir_det.csv"), df_det)
+println("Пик I (детерминированная модель): ", round(maximum(df_det.I), digits = 2))
+println("Время пика: ", df_det.time[argmax(df_det.I)])
+println("Конечное R: ", round(df_det.R[end], digits = 2))
+
+# ## Стохастическая симуляция
+#
+# Используется алгоритм Гиллеспи. Зерно генератора случайных чисел
+# зафиксировано, чтобы результат повторялся.
+
+Random.seed!(123)
+df_stoch = simulate_stochastic(net, u0, (0.0, tmax), rates = [β, γ])
+CSV.write(datadir("sir_stoch.csv"), df_stoch)
+println("Число событий: ", nrow(df_stoch) - 1)
+println("Пик I (стохастическая модель): ", maximum(df_stoch.I))
+println("Время последнего события: ", round(df_stoch.time[end], digits = 2))
+println("Конечное R: ", df_stoch.R[end])
+
+# ## График детерминированной динамики
+
+p_det = plot_sir(df_det)
+savefig(p_det, plotsdir("sir_det_dynamics.png"))
+p_det
+
+# ## График стохастической динамики
+
+p_stoch = plot_sir(df_stoch)
+savefig(p_stoch, plotsdir("sir_stoch_dynamics.png"))
+p_stoch
+
+# ## Итог
+
+println("Базовый прогон завершён. Результаты в data/ и plots/")
