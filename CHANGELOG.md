@@ -1,3 +1,10 @@
+# [1.8.0](https://gitverse.ru/noisycake/2026-1--study--simulation-modeling/compare/v1.7.0...v1.8.0) (2026-10-08)
+
+### Features
+
+* **lab08:** add discrete event sir model ([22c2930](https://gitverse.ru/noisycake/2026-1--study--simulation-modeling/commits/22c293048cbfa76efc6bb708a78f4913e5a98099))
+* **lab08:** add report and presentation ([4976938](https://gitverse.ru/noisycake/2026-1--study--simulation-modeling/commits/4976938c771ca5bc84715a9d01e2002d09f575d7))
+
 # [1.7.0](https://gitverse.ru/noisycake/2026-1--study--simulation-modeling/compare/v1.6.0...v1.7.0) (2026-10-08)
 
 ### Features

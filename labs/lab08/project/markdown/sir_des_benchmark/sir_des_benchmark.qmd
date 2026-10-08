@@ -1,0 +1,85 @@
+# Дискретно-событийная модель SIR: производительность
+
+В дискретно-событийной модели каждый здоровый человек порождает
+событие при каждой встрече, поэтому время счёта растёт вместе
+с размером популяции. Измерим его для 10000 человек с помощью
+`@benchmark` и посмотрим, как оно зависит от размера популяции.
+
+## Активация проекта и загрузка пакетов
+
+```{julia}
+using DrWatson
+@quickactivate "project"
+@isdefined(SIRDES) || include(srcdir("sir_model.jl"))
+using .SIRDES
+using Random, Plots, DataFrames, CSV, BenchmarkTools
+
+script_name = "sir_des_benchmark"
+mkpath(plotsdir())
+mkpath(datadir())
+```
+
+## Подготовка модели
+
+Модель после прогона уже находится в момент `tmax`, и повторный
+вызов `sir_run` ничего не делает. Поэтому перед каждым замером
+создаётся новая модель.
+
+```{julia}
+tmax = 40.0
+p = [0.05, 10.0, 0.25]
+
+function prepared_model(n, p)
+    m = MakeSIRModel([n - 10, 10, 0], p)
+    activate(m)
+    return m
+end
+
+Random.seed!(1234)
+```
+
+## Замер для 10000 человек
+
+Выполняется три замера, каждый на новой модели.
+
+```{julia}
+bench = @benchmark sir_run(m, $tmax) setup = (m = prepared_model(10000, $p)) evals = 1 samples = 3 seconds = 600
+display(bench)
+```
+
+## Зависимость от размера популяции
+
+Для каждого размера популяции выполняется один прогон и замеряется
+его время.
+
+```{julia}
+function time_run(n, p, tmax)
+    m = prepared_model(n, p)
+    return @elapsed sir_run(m, tmax)
+end
+
+sizes = [1000, 2000, 5000, 10000]
+times = [time_run(n, p, tmax) for n in sizes]
+df_bench = DataFrame(N = sizes, time_s = round.(times, digits = 3))
+CSV.write(datadir("sir_des_benchmark.csv"), df_bench)
+println(df_bench)
+```
+
+## График
+
+```{julia}
+plt_bench = plot(
+    df_bench.N,
+    df_bench.time_s,
+    marker = :circle,
+    linewidth = 2,
+    label = "Время прогона",
+    xlabel = "Размер популяции N",
+    ylabel = "Время, с",
+    title = "Производительность",
+    legend = :topleft,
+)
+savefig(plt_bench, plotsdir("sir_des_benchmark.png"))
+plt_bench
+```
+
