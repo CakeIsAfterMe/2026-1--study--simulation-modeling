@@ -1,3 +1,10 @@
+# [1.7.0](https://gitverse.ru/noisycake/2026-1--study--simulation-modeling/compare/v1.6.0...v1.7.0) (2026-10-08)
+
+### Features
+
+* **lab07:** add queueing models ([8ffac0f](https://gitverse.ru/noisycake/2026-1--study--simulation-modeling/commits/8ffac0feab1a2fc1692dd0d3ad7c6c8675eedd6b))
+* **lab07:** add report and presentation ([e8ff88b](https://gitverse.ru/noisycake/2026-1--study--simulation-modeling/commits/e8ff88b04525e6e300b15dffdef410f2ffe7c422))
+
 # [1.6.0](https://gitverse.ru/noisycake/2026-1--study--simulation-modeling/compare/v1.5.0...v1.6.0) (2026-10-07)
 
 ### Features
