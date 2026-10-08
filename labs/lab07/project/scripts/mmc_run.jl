@@ -1,0 +1,92 @@
+# # Модель M/M/c: базовый прогон
+#
+# M/M/c --- это система массового обслуживания, в которой заявки
+# приходят случайно с интенсивностью $\lambda$, обслуживаются одним из $c$
+# одинаковых каналов с интенсивностью $\mu$, а если все каналы заняты,
+# то ждут в общей очереди.
+# В этом скрипте выполняется код из методических указаний для десяти
+# заявок и строятся графики.
+
+# ## Активация проекта и загрузка пакетов
+#
+# Код модели лежит в модуле `MMcModel` в каталоге `src`.
+# Проверка `@isdefined` нужна, чтобы модуль не загружался повторно,
+# когда несколько скриптов выполняются в одном сеансе.
+
+using DrWatson
+@quickactivate "project"
+@isdefined(MMcModel) || include(srcdir("MMcModel.jl"))
+using .MMcModel
+using DataFrames, CSV, Plots, Statistics
+
+script_name = "mmc_run"
+mkpath(plotsdir())
+mkpath(datadir())
+
+# ## Параметры модели
+#
+# Два канала, интенсивность обслуживания 0.5, интенсивность прихода 0.9.
+
+num_customers = 10
+num_servers = 2
+mu = 1.0 / 2
+lam = 0.9
+
+# ## Запуск моделирования
+#
+# При запуске печатается журнал событий: когда каждая заявка пришла,
+# когда началось её обслуживание и когда она ушла.
+
+df = simulate_mmc(lam = lam, mu = mu, c = num_servers, n = num_customers, seed = 123, verbose = true)
+CSV.write(datadir("mmc_run.csv"), df)
+
+# ## Таблица заявок
+#
+# Столбец `wait` --- время ожидания в очереди, `service` --- время обслуживания.
+
+println(df)
+println("Среднее время ожидания: ", round(mean(df.wait), digits = 3))
+println("Среднее время обслуживания: ", round(mean(df.service), digits = 3))
+println("Доля заявок, которым пришлось ждать: ", mean(df.wait .> 1e-9))
+
+# ## График ожидания и обслуживания
+#
+# Для каждой заявки показано, сколько она ждала и сколько обслуживалась.
+
+p1 = plot(
+    xlabel = "Time",
+    ylabel = "Customer",
+    title = "Ожидание и обслуживание",
+    yticks = 1:num_customers,
+    legend = :bottomright,
+)
+for row in eachrow(df)
+    plot!(p1, [row.arrival, row.start], [row.id, row.id], linewidth = 6, color = :orange, label = row.id == 1 ? "Ожидание" : "")
+    plot!(p1, [row.start, row.finish], [row.id, row.id], linewidth = 6, color = :steelblue, label = row.id == 1 ? "Обслуживание" : "")
+end
+savefig(p1, plotsdir("mmc_timeline.png"))
+p1
+
+# ## График числа заявок в системе
+#
+# Горизонтальная линия показывает число каналов: всё, что выше неё,
+# стоит в очереди.
+
+size_data = system_size(df)
+p2 = plot(
+    size_data.times,
+    size_data.counts,
+    seriestype = :steppost,
+    linewidth = 2,
+    label = "Заявок в системе",
+    xlabel = "Time",
+    ylabel = "Customers",
+    title = "Число заявок в системе",
+)
+hline!(p2, [num_servers], linestyle = :dash, label = "Число каналов")
+savefig(p2, plotsdir("mmc_system_size.png"))
+p2
+
+# ## Итог
+
+println("Базовый прогон M/M/c завершён. Результаты в data/ и plots/")
